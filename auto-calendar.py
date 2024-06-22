@@ -10,26 +10,22 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 utc = "+10:00"
 dates = []
 
 def getDates():
     urlFile = open(sys.path[0] + '/../super-secret-url.txt')
     requestUrl = urlFile.readline()
-    print(requestUrl)
     r = requests.get(requestUrl, headers = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36'})
     c = "dTddCR"
     soup = BeautifulSoup(r.content, "html.parser")
 
     dateElements = soup.find_all("span", class_=c)
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    dates = []
 
     for dateElement in dateElements:
         dates.append(dateElement.text)
-
-    print(dates)
 
     for i in range(0, len(dates)):
         parts = dates[i].split(", ")
@@ -40,13 +36,16 @@ def getDates():
         month = months.index(parts[2][1]) + 1
         day = int(parts[2][0])
         hour = parts[0][0]
-        end = parts[0][0]
         if parts[0][1] == 'PM':
             hour = hour.split(":")
             hour[0] = int(hour[0]) % 12
             hour[0] += 12
             hour = ":".join([str(hour[0]), str(hour[1])])
-            end = ":".join([str(hour[0] + 1), str(hour[1])])
+
+        end = hour
+        end = end.split(":")
+        end[0] = str(int(end[0]) + 1)
+        end = ":".join(end)
 
         dates[i] = [year, month, day, hour, end]
 
@@ -68,27 +67,18 @@ def createEvents():
 
     # create event
     for date in dates:
+        startTime = str(date[0]) + "-"  + str(date[1]) + "-" + str(date[2]) + "T" + date[3] + ":00" + utc
+        endTime =  str(date[0]) + "-"  + str(date[1]) + "-" + str(date[2]) + "T" + date[4] + ":00" + utc
+        # make the event :D
         event = {
             "summary": "Basketball",
-            "colorId": 2,
-            "start": {
-                "dateTime": 
-                    str(date[0]) + "-" 
-                    + str(date[1]) + "-"
-                    + str(date[2]) + "T"
-                    + date[3] + ":00" + utc
-            },
-            "end": {
-                "dateTime": 
-                    str(date[0]) + "-" 
-                    + str(date[1]) + "-"
-                    + str(date[2]) + "T"
-                    + date[4]
-                    + ":00" + utc
-            }
+            "colorId": 3,
+            "start": {"dateTime": startTime},
+            "end": {"dateTime": endTime}
         }
         event = service.events().insert(calendarId="primary", body=event).execute()
+        print("Event created " + event.get('htmlLink'))
 
 
-
+getDates()
 createEvents()
