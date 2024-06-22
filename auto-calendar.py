@@ -12,6 +12,9 @@ from googleapiclient.errors import HttpError
 
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 utc = "+10:00"
+eventName = "Basketball"
+eventColour = 6
+
 dates = []
 
 def getDates():
@@ -89,8 +92,8 @@ def createEvents():
 
         # make the event :D
         event = {
-            "summary": "Basketball",
-            "colorId": 6,
+            "summary": eventName,
+            "colorId": eventColour,
             "start": {"dateTime": startTime},
             "end": {"dateTime": endTime}
         }
