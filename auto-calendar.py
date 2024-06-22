@@ -15,39 +15,36 @@ utc = "+10:00"
 dates = []
 
 def getDates():
-    urlFile = open(sys.path[0] + '/../super-secret-url.txt')
-    requestUrl = urlFile.readline()
+    requestUrl = ""
+    with open(sys.path[0] + '/../super-secret-url.txt') as f:
+        requestUrl = f.readline()
     r = requests.get(requestUrl, headers = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36'})
-    c = "dTddCR"
     soup = BeautifulSoup(r.content, "html.parser")
 
-    dateElements = soup.find_all("span", class_=c)
+    c = "dTddCR" # the class that i want
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
+    dateElements = soup.find_all("span", class_=c) # all the elements that contain the dates and times i want
+
     for dateElement in dateElements:
-        dates.append(dateElement.text)
+        parts = dateElement.text.split(", ")
+        for i in range(0, len(parts)):
+            parts[i] = parts[i].split(" ")
 
-    for i in range(0, len(dates)):
-        parts = dates[i].split(", ")
-        for j in range(0, len(parts)):
-            parts[j] = parts[j].split(" ")
+        time = parts[0][0].split(":")
+        if parts[0][1] == "PM":
+            time[0] = str(int(time[0]) % 12 + 12)
+        startTime = ":".join(time)
+        endTime = ":".join([str(int(time[0]) + 1), time[1]])
 
-        year = int(2000 + int(parts[2][2]))
-        month = months.index(parts[2][1]) + 1
-        day = int(parts[2][0])
-        hour = parts[0][0]
-        if parts[0][1] == 'PM':
-            hour = hour.split(":")
-            hour[0] = int(hour[0]) % 12
-            hour[0] += 12
-            hour = ":".join([str(hour[0]), str(hour[1])])
-
-        end = hour
-        end = end.split(":")
-        end[0] = str(int(end[0]) + 1)
-        end = ":".join(end)
-
-        dates[i] = [year, month, day, hour, end]
+        dates.append([
+            "20" + parts[2][2], # year
+            months.index(parts[2][1]) + 1, # month
+            parts[2][0], # day
+            startTime,
+            endTime
+        ])
+    print(dates)
 
 def createEvents():
     # get credentials
