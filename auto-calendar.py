@@ -39,12 +39,11 @@ def getDates():
 
         dates.append([
             "20" + parts[2][2], # year
-            months.index(parts[2][1]) + 1, # month
+            str(months.index(parts[2][1]) + 1).zfill(2), # month
             parts[2][0], # day
             startTime,
             endTime
         ])
-    print(dates)
 
 def createEvents():
     # get credentials
@@ -64,18 +63,41 @@ def createEvents():
 
     # create event
     for date in dates:
+        # calculate start and end times
         startTime = str(date[0]) + "-"  + str(date[1]) + "-" + str(date[2]) + "T" + date[3] + ":00" + utc
         endTime =  str(date[0]) + "-"  + str(date[1]) + "-" + str(date[2]) + "T" + date[4] + ":00" + utc
+        # remove pre-existing duplicates
+        possibleDuplicates = (
+            service.events().list
+            (
+                calendarId="primary",
+                timeMin=startTime,
+                maxResults=10,
+                singleEvents=True,
+                orderBy="startTime",
+            )
+            .execute()
+        )
+        possibleDuplicates = possibleDuplicates.get("items", [])
+        for possibleDuplicate in possibleDuplicates:
+            start = possibleDuplicate["start"].get("dateTime", possibleDuplicate["start"].get("date"))
+            end = possibleDuplicate["end"].get("dateTime", possibleDuplicate["end"].get("date"))
+
+            if (start == startTime and end == endTime):
+                if (possibleDuplicate["summary"] == "Basketball"):
+                    service.events().delete(calendarId = "primary", eventId = possibleDuplicate["id"]).execute()
+
         # make the event :D
         event = {
             "summary": "Basketball",
-            "colorId": 3,
+            "colorId": 6,
             "start": {"dateTime": startTime},
             "end": {"dateTime": endTime}
         }
         event = service.events().insert(calendarId="primary", body=event).execute()
-        print("Event created " + event.get('htmlLink'))
+        print("Event created: " + event.get('htmlLink'))
 
-
+print("Creating your events...")
 getDates()
 createEvents()
+print("Done!")
